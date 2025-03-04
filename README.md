@@ -127,3 +127,7 @@ Envie para o repositório remoto (git push origin feature/nova-funcionalidade).
 Abra um Pull Request.
 
 [Licença](LICENSE.md)
+
+[![Next.js](https://img.shields.io/badge/Next.js-14.0.0-black)](https://nextjs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.0.0-blue)](https://www.prisma.io/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.3.0-38B2AC)](https://tailwindcss.com/)
