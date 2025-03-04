@@ -2,7 +2,7 @@
 
 Bem-vindo ao StockApp, uma aplicação web desenvolvida para facilitar o gerenciamento diário de estoque e vendas de uma empresa. Este sistema registra o estoque atual de produtos, seus valores, a quantidade vendida ao final do dia e gera estatísticas de vendas (diárias, semanais, mensais e anuais). Construído com Next.js, o StockApp é rápido, intuitivo e escalável.
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.0.0-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.0.0-black)](https://nextjs.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.0.0-blue)](https://www.prisma.io/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.3.0-38B2AC)](https://tailwindcss.com/)
 
