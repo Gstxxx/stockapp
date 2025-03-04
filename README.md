@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StockApp - Sistema de Gerenciamento de Estoque e Vendas
 
-## Getting Started
+Bem-vindo ao StockApp, uma aplicação web desenvolvida para facilitar o gerenciamento diário de estoque e vendas de uma empresa. Este sistema registra o estoque atual de produtos, seus valores, a quantidade vendida ao final do dia e gera estatísticas de vendas (diárias, semanais, mensais e anuais). Construído com Next.js, o StockApp é rápido, intuitivo e escalável.
 
-First, run the development server:
+## Funcionalidades
 
-```bash
+Cadastro e edição de produtos (nome, preço, quantidade em estoque).
+
+Registro diário da quantidade vendida por produto.
+
+Atualização automática do estoque com base nas vendas.
+
+Relatórios de vendas com filtros: diário, semanal, mensal e anual.
+
+Interface amigável e responsiva.
+
+### Tecnologias Utilizadas
+
+Frontend: Next.js 15 (React), Tailwind CSS.
+
+Backend: Next.js API Routes.
+
+Banco de Dados: SQLite (via Prisma ORM) - expansível para PostgreSQL.
+
+Gráficos: Chart.js.
+
+Outras: TypeScript, ESLint, Prettier.
+
+### Pré-requisitos
+
+Antes de começar, certifique-se de ter instalado:
+Node.js (versão 18 ou superior)
+
+npm ou yarn
+
+Um editor de código como VSCode
+
+### Instalação
+
+Siga os passos abaixo para configurar o projeto localmente:
+Clone o repositório:
+bash
+
+git clone https://github.com/gstxxx/stockapp.git
+cd stockapp
+
+Instale as dependências:
+bash
+
+npm install
+
+# ou
+
+yarn install
+
+Configure o banco de dados:
+Crie um arquivo .env na raiz do projeto com a seguinte variável:
+
+DATABASE_URL="file:./dev.db"
+
+Inicialize o Prisma:
+bash
+
+npx prisma init
+npx prisma migrate dev --name init
+
+Inicie o servidor de desenvolvimento:
+bash
+
 npm run dev
-# or
+
+# ou
+
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A aplicação estará disponível em http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Uso
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Acesse a aplicação:
+Abra o navegador em http://localhost:3000.
 
-## Learn More
+Dashboard:
+Veja o resumo do estoque atual e vendas recentes.
 
-To learn more about Next.js, take a look at the following resources:
+Gerenciamento de Produtos:
+Vá até a seção "Produtos" para adicionar, editar ou excluir itens.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Registro de Vendas:
+Ao final do dia, insira a quantidade vendida na seção correspondente.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Estatísticas:
+Acesse "Estatísticas" para visualizar relatórios com filtros de período.
 
-## Deploy on Vercel
+### Estrutura do Projeto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+stockapp/
+├── /app # Páginas e rotas da API
+├── /components # Componentes React reutilizáveis
+├── /lib # Configurações (ex.: Prisma)
+├── /public # Arquivos estáticos
+├── /prisma # Schema e migrações do banco de dados
+├── README.md # Este arquivo
+├── package.json # Dependências e scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Scripts Disponíveis
+
+npm run dev: Inicia o servidor de desenvolvimento.
+
+npm run build: Gera a versão otimizada para produção.
+
+npm run start: Inicia o servidor de produção.
+
+npm run lint: Verifica o código com ESLint.
+
+### Contribuição
+
+Se você deseja contribuir:
+Faça um fork do repositório.
+
+Crie uma branch para sua feature (git checkout -b feature/nova-funcionalidade).
+
+Commit suas mudanças (git commit -m "Adiciona nova funcionalidade").
+
+Envie para o repositório remoto (git push origin feature/nova-funcionalidade).
+
+Abra um Pull Request.
+
+[Licença](LICENSE.md)
