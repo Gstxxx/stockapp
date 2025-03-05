@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJwt } from "./lib/auth";
+import { verifyJWT } from "./lib/auth/jwt";
 
+const cookieName = process.env.NEXT_PUBLIC_JWT_SECRET;
 // Rotas que não precisam de autenticação
-const publicRoutes = ["/", "/login", "/api/auth/login", "/api/auth/register"];
+const publicRoutes = [
+  "/",
+  "/login",
+  "/register",
+  "/test",
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/check",
+  "/api/auth/logout",
+];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Verificar se a rota é pública
   const isPublicRoute = publicRoutes.some(
     (route) =>
@@ -16,41 +26,50 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (!cookieName) {
+    console.error(
+      "Variável de ambiente NEXT_PUBLIC_JWT_SECRET não está definida."
+    );
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
   // Verificar o token de autenticação
-  const token = request.cookies.get("auth_token")?.value;
+  const token = request.cookies.get(cookieName)?.value;
+
+  if (
+    !token &&
+    request.nextUrl.pathname !== "/login" &&
+    request.nextUrl.pathname !== "/register"
+  ) {
+    console.log("Token não encontrado. Redirecionando para login.");
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (request.nextUrl.pathname === "/login" && token) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   if (!token) {
-    // Redirecionar para a página de login se não houver token
-    if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    } else {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+    return NextResponse.next();
   }
 
-  // Verificar se o token é válido
-  const payload = verifyJwt(token);
+  try {
+    const payload = await verifyJWT(token);
 
-  if (!payload) {
-    // Redirecionar para a página de login se o token for inválido
-    if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    } else {
-      return NextResponse.redirect(new URL("/login", request.url));
+    if (!payload) {
+      console.log("Token inválido. Redirecionando para login.");
+      const response = NextResponse.redirect(new URL("/login", request.url));
+
+      response.cookies.delete(cookieName);
+
+      return response;
     }
+    return NextResponse.next();
+  } catch (error) {
+    console.error("Erro ao verificar token:", error);
+    return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/dashboard/:path*"],
 };

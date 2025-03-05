@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { signJwt } from "@/lib/auth";
-import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
 
 // POST /api/auth/login - Autenticar usuário
 export async function POST(request: NextRequest) {
@@ -30,25 +29,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Gerar token JWT
-    const token = signJwt({
-      id: user.id,
-      username: user.username,
-    });
+    const token = jwt.sign(
+      { sub: user.id, username: user.username },
+      process.env.NEXT_PUBLIC_JWT_SECRET ?? "your-secret-key",
+      { expiresIn: "1d" }
+    );
 
-    // Definir cookie de autenticação
-    cookies().set({
-      name: "auth_token",
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 7 dias
-      path: "/",
-    });
+    // Remove password from response
+    const { password: _, ...userWithoutPassword } = user;
 
     return NextResponse.json({
-      id: user.id,
-      username: user.username,
+      user: userWithoutPassword,
+      token,
     });
   } catch (error) {
     console.error("Erro ao autenticar usuário:", error);

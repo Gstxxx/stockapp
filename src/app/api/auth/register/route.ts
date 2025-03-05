@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { signJwt } from "@/lib/auth";
+import { signIn } from "@/lib/auth/signIn";
 
 // POST /api/auth/register - Registrar novo usuário
 export async function POST(request: NextRequest) {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Gerar token JWT
-    const token = signJwt({
+    const token = signIn({
       id: user.id,
       username: user.username,
     });
