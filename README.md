@@ -149,10 +149,10 @@ Se você deseja contribuir:
 
 ### roadmap
 
-[x] diferenciar metedos de pagamento produtos especificos (pix, cartão)
-[x] diferenciar stock de geladeira
-[x] botão de adcionar a geladeira (removendo a quantidade do stock e adcionando a quantidade da geladeira)
-[x] botão de restock de produtos (adcionar produto ao stock)
+- [x] diferenciar metedos de pagamento produtos especificos (pix, cartão)
+- [x] diferenciar stock de geladeira
+- [x] botão de adcionar a geladeira (removendo a quantidade do stock e adcionando a quantidade da geladeira)
+- [x] botão de restock de produtos (adcionar produto ao stock)
 
 ### previews
 
