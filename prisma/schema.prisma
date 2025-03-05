@@ -16,18 +16,22 @@ datasource db {
 model Product {
   id          Int      @id @default(autoincrement())
   name        String   @unique
-  price       Int      // Preço unitário em centavos
-  quantity    Int      // Quantidade em estoque
+  price Int    // Preço para pagamento via PIX ou dinheiro (em centavos)
+  priceCard    Int?    // Preço para pagamento via cartão (em centavos)
+  stockQuantity Int    // Quantidade em estoque
+  saleQuantity Int     // Quantidade disponível para venda
+  sales       Sale[]   // Relação com vendas
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  sales       Sale[]   // Relação com vendas
 }
 
 model Sale {
   id          Int      @id @default(autoincrement())
   productId   Int
   quantity    Int      // Quantidade vendida
-  totalValue  Int      // Valor total da venda em centavos (price * quantity)
+  totalValue  Int      // Valor total da venda em centavos
+  paymentMethod String  // Método de pagamento (PIX, CASH, CARD)
   date        DateTime @default(now())
   product     Product  @relation(fields: [productId], references: [id])
 }

@@ -6,21 +6,12 @@ import Navbar from '@/components/Navbar';
 import ProductTable from '@/components/ProductTable';
 import ProductForm from '@/components/ProductForm';
 import SaleForm from '@/components/SaleForm';
-
-// Definir a interface Product para corresponder à interface usada nos componentes
-interface Product {
-    id: number;
-    name: string;
-    price: number;
-    quantity: number;
-}
-
-// Interface para o formulário de produto que pode ter ID opcional
-interface ProductFormData {
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Loader2 } from 'lucide-react';
+import { Product } from '@/types/product';
+import { toast } from 'sonner';
+interface ProductFormData extends Omit<Product, 'id'> {
     id?: number;
-    name: string;
-    price: number;
-    quantity: number;
 }
 
 export default function ProductsPage() {
@@ -161,14 +152,14 @@ export default function ProductsPage() {
         }
     };
 
-    const handleRegisterSale = async (productId: number, quantity: number) => {
+    const handleRegisterSale = async (productId: number, quantity: number, paymentMethod: string) => {
         try {
             const response = await fetch('/api/sales', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ productId, quantity }),
+                body: JSON.stringify({ productId, quantity, paymentMethod }),
             });
 
             if (!response.ok) {
@@ -187,71 +178,182 @@ export default function ProductsPage() {
         }
     };
 
-    return (
-        <div className="min-h-screen bg-gray-100">
-            <Navbar username={username || undefined} onLogout={handleLogout} />
+    const handleRestock = async (product: Product, amount: number) => {
+        try {
+            // Validações locais
+            if (amount <= 0) {
+                toast.error('Quantidade deve ser maior que zero');
+                return;
+            }
 
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                <div className="px-4 py-6 sm:px-0">
-                    <div className="flex justify-between items-center">
-                        <h1 className="text-2xl font-semibold text-gray-900">Produtos</h1>
+            if (amount > product.stockQuantity) {
+                toast.error('Quantidade insuficiente em estoque');
+                return;
+            }
+
+            // Chamada à API
+            const response = await fetch(`/api/products/${product.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ amount }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Erro ao reabastecer produto');
+            }
+
+            const updatedProduct = await response.json();
+
+            // Atualizar a lista de produtos
+            setProducts(products.map(p =>
+                p.id === updatedProduct.id ? updatedProduct : p
+            ));
+
+            toast.success('Estoque reabastecido com sucesso!');
+        } catch (error) {
+            console.error('Erro ao reabastecer:', error);
+            toast.error(error instanceof Error ? error.message : 'Erro ao reabastecer produto');
+        }
+    };
+
+    const handleMainRestock = async (product: Product, amount: number) => {
+        try {
+            // Validações locais
+            if (amount <= 0) {
+                toast.error('Quantidade deve ser maior que zero');
+                return;
+            }
+
+            // Chamada à API
+            const response = await fetch(`/api/products/${product.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ amount }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Erro ao reabastecer estoque');
+            }
+
+            const updatedProduct = await response.json();
+
+            // Atualizar a lista de produtos
+            setProducts(products.map(p =>
+                p.id === updatedProduct.id ? updatedProduct : p
+            ));
+
+            toast.success('Estoque reabastecido com sucesso!');
+        } catch (error) {
+            console.error('Erro ao reabastecer estoque:', error);
+            toast.error(error instanceof Error ? error.message : 'Erro ao reabastecer estoque');
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-transparent">
+            <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
+                {/* Efeito de luz de fundo */}
+                <div className="absolute inset-0 bg-orange-500/5 blur-3xl rounded-full transform -translate-y-1/2"></div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="relative"
+                >
+                    <div className="flex justify-between items-center mb-8">
+                        <motion.h1
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-3xl font-bold bg-gradient-to-r from-white to-orange-300 bg-clip-text text-transparent"
+                        >
+                            Produtos
+                        </motion.h1>
 
                         {!showNewForm && !editingProduct && !sellingProduct && (
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => setShowNewForm(true)}
-                                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                className="inline-flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-400 
+                                text-white font-medium shadow-lg hover:shadow-orange-500/20 transition-all duration-300"
                             >
+                                <Plus className="w-5 h-5 mr-2" />
                                 Adicionar Produto
-                            </button>
+                            </motion.button>
                         )}
                     </div>
 
-                    {error && (
-                        <div className="mt-4 bg-red-100 p-4 rounded-md">
-                            <p className="text-red-700">{error}</p>
-                        </div>
-                    )}
+                    <AnimatePresence mode="wait">
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 backdrop-blur-sm"
+                            >
+                                <p className="text-red-300">{error}</p>
+                            </motion.div>
+                        )}
 
-                    {loading ? (
-                        <div className="text-center py-10">
-                            <p>Carregando...</p>
-                        </div>
-                    ) : (
-                        <div className="mt-6">
-                            {showNewForm ? (
-                                <ProductForm
-                                    onSubmit={handleAddProduct}
-                                    onCancel={() => {
-                                        setShowNewForm(false);
-                                        router.push('/products');
-                                    }}
-                                />
-                            ) : editingProduct ? (
-                                <ProductForm
-                                    product={editingProduct}
-                                    onSubmit={handleUpdateProduct}
-                                    onCancel={() => {
-                                        setEditingProduct(null);
-                                        router.push('/products');
-                                    }}
-                                />
-                            ) : sellingProduct ? (
-                                <SaleForm
-                                    product={sellingProduct}
-                                    onSubmit={handleRegisterSale}
-                                    onCancel={() => setSellingProduct(null)}
-                                />
-                            ) : (
-                                <ProductTable
-                                    products={products}
-                                    onEdit={setEditingProduct}
-                                    onDelete={handleDeleteProduct}
-                                    onRegisterSale={setSellingProduct}
-                                />
-                            )}
-                        </div>
-                    )}
-                </div>
+                        {loading ? (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center justify-center py-20"
+                            >
+                                <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                className="rounded-xl overflow-hidden shadow-2xl"
+                            >
+                                {showNewForm ? (
+                                    <ProductForm
+                                        onSubmit={handleAddProduct}
+                                        onCancel={() => {
+                                            setShowNewForm(false);
+                                            router.push('/products');
+                                        }}
+                                    />
+                                ) : editingProduct ? (
+                                    <ProductForm
+                                        product={editingProduct}
+                                        onSubmit={handleUpdateProduct}
+                                        onCancel={() => {
+                                            setEditingProduct(null);
+                                            router.push('/products');
+                                        }}
+                                    />
+                                ) : sellingProduct ? (
+                                    <SaleForm
+                                        product={sellingProduct}
+                                        onSubmit={handleRegisterSale}
+                                        onCancel={() => setSellingProduct(null)}
+                                    />
+                                ) : (
+                                    <ProductTable
+                                        products={products}
+                                        onEdit={setEditingProduct}
+                                        onDelete={handleDeleteProduct}
+                                        onRegisterSale={setSellingProduct}
+                                        onRestock={handleRestock}
+                                        onRestockMain={handleMainRestock}
+                                    />
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
             </main>
         </div>
     );

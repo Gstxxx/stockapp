@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         price,
-        quantity,
+        stockQuantity: quantity,
+        saleQuantity: quantity,
       },
     });
 

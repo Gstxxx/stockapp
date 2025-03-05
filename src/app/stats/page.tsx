@@ -2,14 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import SalesChart from '@/components/SalesChart';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart2, DollarSign, Package, Loader2 } from 'lucide-react';
 
 interface TimeGroupedSale {
     period: string;
     totalQuantity: number;
     totalRevenue: number;
     sales: number;
+    paymentMethods: {
+        [key: string]: {
+            total: number;
+            count: number;
+        }
+    };
 }
 
 interface ProductSale {
@@ -17,12 +24,25 @@ interface ProductSale {
     productName: string;
     totalQuantity: number;
     totalRevenue: number;
+    lastSaleTime: string;
+    paymentMethods: {
+        [key: string]: {
+            total: number;
+            count: number;
+        }
+    };
 }
 
 interface StatsSummary {
     totalSales: number;
     totalRevenue: number;
     totalQuantity: number;
+    paymentMethods: {
+        [key: string]: {
+            total: number;
+            count: number;
+        }
+    };
 }
 
 interface StatsData {
@@ -134,25 +154,42 @@ export default function StatsPage() {
     }, [period]);
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <Navbar username={username || undefined} onLogout={handleLogout} />
+        <div className="min-h-screen bg-transparent">
+            <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 relative">
+                {/* Efeito de luz de fundo */}
+                <div className="absolute inset-0 bg-orange-500/5 blur-3xl rounded-full transform -translate-y-1/2"></div>
 
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                <div className="px-4 py-6 sm:px-0">
-                    <h1 className="text-2xl font-semibold text-gray-900">Estatísticas de Vendas</h1>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="relative"
+                >
+                    <motion.h1
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="text-3xl font-bold bg-gradient-to-r from-white to-orange-300 bg-clip-text text-transparent mb-8"
+                    >
+                        Estatísticas de Vendas
+                    </motion.h1>
 
                     {/* Filtros */}
-                    <div className="mt-4 bg-white p-4 rounded-lg shadow">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl p-6 mb-6"
+                    >
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                             <div>
-                                <label htmlFor="period" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="period" className="block text-sm font-medium text-gray-300 mb-1">
                                     Período
                                 </label>
                                 <select
                                     id="period"
                                     value={period}
                                     onChange={(e) => setPeriod(e.target.value as any)}
-                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                    className="w-full bg-gray-700/50 border border-white/10 rounded-lg px-3 py-2 text-white 
+                                             focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50"
                                 >
                                     <option value="daily">Diário</option>
                                     <option value="weekly">Semanal</option>
@@ -162,7 +199,7 @@ export default function StatsPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="startDate" className="block text-sm font-medium text-gray-300 mb-1">
                                     Data Inicial
                                 </label>
                                 <input
@@ -170,12 +207,13 @@ export default function StatsPage() {
                                     id="startDate"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                    className="w-full bg-gray-700/50 border border-white/10 rounded-lg px-3 py-2 text-white 
+                                             focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                                <label htmlFor="endDate" className="block text-sm font-medium text-gray-300 mb-1">
                                     Data Final
                                 </label>
                                 <input
@@ -183,132 +221,268 @@ export default function StatsPage() {
                                     id="endDate"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                                    className="w-full bg-gray-700/50 border border-white/10 rounded-lg px-3 py-2 text-white 
+                                             focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50"
                                 />
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    {error && (
-                        <div className="mt-4 bg-red-100 p-4 rounded-md">
-                            <p className="text-red-700">{error}</p>
-                        </div>
-                    )}
+                    <AnimatePresence mode="wait">
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 backdrop-blur-sm"
+                            >
+                                <p className="text-red-300">{error}</p>
+                            </motion.div>
+                        )}
 
-                    {loading ? (
-                        <div className="text-center py-10">
-                            <p>Carregando...</p>
-                        </div>
-                    ) : statsData ? (
-                        <div className="mt-6">
-                            {/* Cards de resumo */}
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                                {/* Total de vendas */}
-                                <div className="bg-white overflow-hidden shadow rounded-lg">
-                                    <div className="px-4 py-5 sm:p-6">
-                                        <dl>
-                                            <dt className="text-sm font-medium text-gray-500 truncate">
-                                                Total de Vendas
-                                            </dt>
-                                            <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                                                {statsData.summary.totalSales}
-                                            </dd>
-                                        </dl>
-                                    </div>
+                        {loading ? (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex items-center justify-center py-20"
+                            >
+                                <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
+                            </motion.div>
+                        ) : statsData ? (
+                            <div className="space-y-8">
+                                {/* Cards de resumo */}
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                                    {/* Total de vendas */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl"
+                                    >
+                                        <div className="p-6">
+                                            <div className="flex items-center">
+                                                <div className="flex-shrink-0 bg-orange-500/20 rounded-lg p-3">
+                                                    <BarChart2 className="h-6 w-6 text-orange-400" />
+                                                </div>
+                                                <div className="ml-5 w-0 flex-1">
+                                                    <dl>
+                                                        <dt className="text-sm font-medium text-gray-400 truncate">
+                                                            Total de Vendas
+                                                        </dt>
+                                                        <dd className="mt-1 text-3xl font-semibold text-white">
+                                                            {statsData.summary.totalSales || 0}
+                                                        </dd>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Quantidade vendida */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl"
+                                    >
+                                        <div className="p-6">
+                                            <div className="flex items-center">
+                                                <div className="flex-shrink-0 bg-green-500/20 rounded-lg p-3">
+                                                    <Package className="h-6 w-6 text-green-400" />
+                                                </div>
+                                                <div className="ml-5 w-0 flex-1">
+                                                    <dl>
+                                                        <dt className="text-sm font-medium text-gray-400 truncate">
+                                                            Quantidade Vendida
+                                                        </dt>
+                                                        <dd className="mt-1 text-3xl font-semibold text-white">
+                                                            {statsData.summary.totalQuantity || 0}
+                                                        </dd>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Valor total */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl"
+                                    >
+                                        <div className="p-6">
+                                            <div className="flex items-center">
+                                                <div className="flex-shrink-0 bg-blue-500/20 rounded-lg p-3">
+                                                    <DollarSign className="h-6 w-6 text-blue-400" />
+                                                </div>
+                                                <div className="ml-5 w-0 flex-1">
+                                                    <dl>
+                                                        <dt className="text-sm font-medium text-gray-400 truncate">
+                                                            Valor Total
+                                                        </dt>
+                                                        <dd className="mt-1 text-3xl font-semibold text-white">
+                                                            {formatCurrency(statsData.summary.totalRevenue || 0)}
+                                                        </dd>
+                                                    </dl>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 </div>
 
-                                {/* Quantidade vendida */}
-                                <div className="bg-white overflow-hidden shadow rounded-lg">
-                                    <div className="px-4 py-5 sm:p-6">
-                                        <dl>
-                                            <dt className="text-sm font-medium text-gray-500 truncate">
-                                                Quantidade Vendida
-                                            </dt>
-                                            <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                                                {statsData.summary.totalQuantity}
-                                            </dd>
-                                        </dl>
+                                {/* Resumo dos métodos de pagamento */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl p-6"
+                                >
+                                    <h2 className="text-lg font-medium text-white mb-4">Formas de Pagamento</h2>
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                        {Object.keys(statsData.summary.paymentMethods || {}).length > 0 ? (
+                                            Object.entries(statsData.summary.paymentMethods).map(([method, data]) => (
+                                                <div key={method} className="bg-gray-700/30 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-medium text-gray-300 capitalize">{method}</span>
+                                                        <span className="text-sm text-gray-400">{data.count} vendas</span>
+                                                    </div>
+                                                    <div className="mt-2">
+                                                        <span className="text-2xl font-semibold text-white">
+                                                            {formatCurrency(data.total)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="col-span-full text-center py-4">
+                                                <p className="text-gray-400">Nenhuma venda registrada no período.</p>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                </motion.div>
 
-                                {/* Valor total */}
-                                <div className="bg-white overflow-hidden shadow rounded-lg">
-                                    <div className="px-4 py-5 sm:p-6">
-                                        <dl>
-                                            <dt className="text-sm font-medium text-gray-500 truncate">
-                                                Valor Total
-                                            </dt>
-                                            <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                                                {formatCurrency(statsData.summary.totalRevenue)}
-                                            </dd>
-                                        </dl>
+                                {/* Gráficos */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl p-6"
+                                >
+                                    {statsData.timeGroupedSales.length > 0 ? (
+                                        <SalesChart
+                                            timeGroupedSales={statsData.timeGroupedSales}
+                                            productSales={statsData.productSales}
+                                            period={statsData.period}
+                                        />
+                                    ) : (
+                                        <div className="text-center py-10">
+                                            <p className="text-gray-400">Não há dados de vendas para o período selecionado.</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+
+                                {/* Tabela de vendas por produto */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-xl"
+                                >
+                                    <div className="p-6">
+                                        <h2 className="text-lg font-medium text-white mb-4">Vendas por Produto</h2>
+
+                                        {statsData.productSales.length > 0 ? (
+                                            <div className="overflow-hidden">
+                                                <table className="min-w-full divide-y divide-gray-700">
+                                                    <thead>
+                                                        <tr>
+                                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                                Produto
+                                                            </th>
+                                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                                Quantidade
+                                                            </th>
+                                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                                Valor Total
+                                                            </th>
+                                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                                Última Venda
+                                                            </th>
+                                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                                Métodos de Pagamento
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-700">
+                                                        {statsData.productSales.map((productSale) => (
+                                                            <tr key={productSale.productId}>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                                                                    {productSale.productName}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                                    {productSale.totalQuantity}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-sm text-gray-300">
+                                                                    <div className="space-y-2">
+                                                                        {Object.entries(productSale.paymentMethods || {}).map(([method, data]) => (
+                                                                            <div key={method} className="flex items-center justify-between border-b border-gray-700/50 pb-1 last:border-0">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="capitalize">
+                                                                                        {method === 'CARD' ? 'Cartão' :
+                                                                                            method === 'CASH' ? 'Dinheiro' :
+                                                                                                method === 'PIX' ? 'Pix' : method}
+                                                                                    </span>
+                                                                                    <span className="text-gray-400">({data.count} vendas)</span>
+                                                                                </div>
+                                                                                <span className="ml-4 text-orange-300">{formatCurrency(data.total)}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                        <div className="flex items-center justify-between pt-1 font-medium">
+                                                                            <span className="text-white">Total</span>
+                                                                            <span className="ml-4 text-white">{formatCurrency(productSale.totalRevenue)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                                    {new Date(productSale.lastSaleTime).toLocaleString('pt-BR')}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-sm text-gray-300">
+                                                                    <div className="space-y-1">
+                                                                        {Object.entries(productSale.paymentMethods || {}).map(([method, data]) => (
+                                                                            <div key={method} className="flex items-center justify-between">
+                                                                                <span className="capitalize">
+                                                                                    {method === 'CARD' ? 'Cartão' :
+                                                                                        method === 'CASH' ? 'Dinheiro' :
+                                                                                            method === 'PIX' ? 'Pix' : method}
+                                                                                </span>
+                                                                                <span className="ml-4">{data.count} vendas</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-400 text-center py-4">Nenhuma venda registrada no período.</p>
+                                        )}
                                     </div>
-                                </div>
+                                </motion.div>
                             </div>
-
-                            {/* Gráficos */}
-                            <div className="mt-8">
-                                {statsData.timeGroupedSales.length === 0 ? (
-                                    <div className="bg-white p-4 rounded-lg shadow text-center">
-                                        <p className="text-gray-500">Não há dados de vendas para o período selecionado.</p>
-                                    </div>
-                                ) : (
-                                    <SalesChart
-                                        timeGroupedSales={statsData.timeGroupedSales}
-                                        productSales={statsData.productSales}
-                                        period={statsData.period}
-                                    />
-                                )}
-                            </div>
-
-                            {/* Tabela de vendas por produto */}
-                            <div className="mt-8">
-                                <h2 className="text-lg font-medium text-gray-900">Vendas por Produto</h2>
-
-                                {statsData.productSales.length === 0 ? (
-                                    <p className="mt-2 text-gray-500">Não há dados de vendas para o período selecionado.</p>
-                                ) : (
-                                    <div className="mt-4 overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                                        <table className="min-w-full divide-y divide-gray-300">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                                                        Produto
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                                        Quantidade
-                                                    </th>
-                                                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                                        Valor Total
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200 bg-white">
-                                                {statsData.productSales.map((productSale) => (
-                                                    <tr key={productSale.productId}>
-                                                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                                            {productSale.productName}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {productSale.totalQuantity}
-                                                        </td>
-                                                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                                            {formatCurrency(productSale.totalRevenue)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="mt-6 bg-white p-4 rounded-lg shadow text-center">
-                            <p className="text-gray-500">Não há dados disponíveis.</p>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="bg-gray-800/50 backdrop-blur-xl border border-white/10 rounded-xl p-6 text-center"
+                            >
+                                <p className="text-gray-400">Não há dados disponíveis.</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
             </main>
         </div>
     );

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const period = searchParams.get("period") || "daily"; // daily, weekly, monthly, yearly
+    const period = searchParams.get("period") || "daily";
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
@@ -17,19 +17,15 @@ export async function GET(request: NextRequest) {
     if (!startDate) {
       switch (period) {
         case "daily":
-          // Hoje
           start.setHours(0, 0, 0, 0);
           break;
         case "weekly":
-          // Últimos 7 dias
           start.setDate(start.getDate() - 7);
           break;
         case "monthly":
-          // Último mês
           start.setMonth(start.getMonth() - 1);
           break;
         case "yearly":
-          // Último ano
           start.setFullYear(start.getFullYear() - 1);
           break;
       }
@@ -48,6 +44,7 @@ export async function GET(request: NextRequest) {
           select: {
             name: true,
             price: true,
+            priceCard: true,
           },
         },
       },
@@ -56,48 +53,90 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calcular estatísticas
+    // Calcular estatísticas gerais
     const totalSales = sales.length;
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalValue, 0);
     const totalQuantity = sales.reduce((sum, sale) => sum + sale.quantity, 0);
 
-    // Agrupar vendas por produto
-    const productSales = sales.reduce((acc, sale) => {
-      const productId = sale.productId;
-
-      if (!acc[productId]) {
-        acc[productId] = {
-          productId,
-          productName: sale.product.name,
-          totalQuantity: 0,
-          totalRevenue: 0,
+    // Calcular estatísticas por método de pagamento
+    const paymentMethods = sales.reduce((acc, sale) => {
+      const method = sale.paymentMethod.toUpperCase();
+      if (!acc[method]) {
+        acc[method] = {
+          total: 0,
+          count: 0,
         };
       }
-
-      acc[productId].totalQuantity += sale.quantity;
-      acc[productId].totalRevenue += sale.totalValue;
-
+      acc[method].total += sale.totalValue;
+      acc[method].count += 1;
       return acc;
-    }, {} as Record<number, { productId: number; productName: string; totalQuantity: number; totalRevenue: number }>);
+    }, {} as Record<string, { total: number; count: number }>);
+
+    // Agrupar vendas por produto
+    const productSales = sales.reduce(
+      (acc, sale) => {
+        const productId = sale.productId;
+
+        if (!acc[productId]) {
+          acc[productId] = {
+            productId,
+            productName: sale.product.name,
+            totalQuantity: 0,
+            totalRevenue: 0,
+            lastSaleTime: sale.date.toISOString(),
+            paymentMethods: {} as Record<
+              string,
+              { total: number; count: number }
+            >,
+          };
+        }
+
+        acc[productId].totalQuantity += sale.quantity;
+        acc[productId].totalRevenue += sale.totalValue;
+
+        // Agrupar por método de pagamento para cada produto
+        const method = sale.paymentMethod.toUpperCase();
+        if (!acc[productId].paymentMethods[method]) {
+          acc[productId].paymentMethods[method] = {
+            total: 0,
+            count: 0,
+          };
+        }
+        acc[productId].paymentMethods[method].total += sale.totalValue;
+        acc[productId].paymentMethods[method].count += 1;
+
+        // Atualizar última venda se for mais recente
+        if (new Date(sale.date) > new Date(acc[productId].lastSaleTime)) {
+          acc[productId].lastSaleTime = sale.date.toISOString();
+        }
+
+        return acc;
+      },
+      {} as Record<
+        number,
+        {
+          productId: number;
+          productName: string;
+          totalQuantity: number;
+          totalRevenue: number;
+          lastSaleTime: string;
+          paymentMethods: Record<string, { total: number; count: number }>;
+        }
+      >
+    );
 
     // Agrupar vendas por período
     let timeGroupedSales;
 
     switch (period) {
       case "daily":
-        // Agrupar por hora
         timeGroupedSales = groupSalesByTimeUnit(sales, "hour");
         break;
       case "weekly":
-        // Agrupar por dia
-        timeGroupedSales = groupSalesByTimeUnit(sales, "day");
-        break;
       case "monthly":
-        // Agrupar por dia
         timeGroupedSales = groupSalesByTimeUnit(sales, "day");
         break;
       case "yearly":
-        // Agrupar por mês
         timeGroupedSales = groupSalesByTimeUnit(sales, "month");
         break;
       default:
@@ -112,6 +151,7 @@ export async function GET(request: NextRequest) {
         totalSales,
         totalRevenue,
         totalQuantity,
+        paymentMethods,
       },
       productSales: Object.values(productSales),
       timeGroupedSales,
@@ -130,50 +170,80 @@ function groupSalesByTimeUnit(
   sales: any[],
   timeUnit: "hour" | "day" | "month"
 ) {
-  const grouped = sales.reduce((acc, sale) => {
-    const date = new Date(sale.date);
-    let key: string;
+  const grouped = sales.reduce(
+    (acc, sale) => {
+      const date = new Date(sale.date);
+      let key: string;
 
-    switch (timeUnit) {
-      case "hour":
-        key = `${date.getFullYear()}-${(date.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}-${date
-          .getDate()
-          .toString()
-          .padStart(2, "0")} ${date.getHours().toString().padStart(2, "0")}:00`;
-        break;
-      case "day":
-        key = `${date.getFullYear()}-${(date.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-        break;
-      case "month":
-        key = `${date.getFullYear()}-${(date.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}`;
-        break;
-      default:
-        key = `${date.getFullYear()}-${(date.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
-    }
+      switch (timeUnit) {
+        case "hour":
+          key = `${date.getFullYear()}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}-${date
+            .getDate()
+            .toString()
+            .padStart(2, "0")} ${date
+            .getHours()
+            .toString()
+            .padStart(2, "0")}:00`;
+          break;
+        case "day":
+          key = `${date.getFullYear()}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+          break;
+        case "month":
+          key = `${date.getFullYear()}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}`;
+          break;
+        default:
+          key = `${date.getFullYear()}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+      }
 
-    if (!acc[key]) {
-      acc[key] = {
-        period: key,
-        totalQuantity: 0,
-        totalRevenue: 0,
-        sales: 0,
-      };
-    }
+      if (!acc[key]) {
+        acc[key] = {
+          period: key,
+          totalQuantity: 0,
+          totalRevenue: 0,
+          sales: 0,
+          paymentMethods: {} as Record<
+            string,
+            { total: number; count: number }
+          >,
+        };
+      }
 
-    acc[key].totalQuantity += sale.quantity;
-    acc[key].totalRevenue += sale.totalValue;
-    acc[key].sales += 1;
+      acc[key].totalQuantity += sale.quantity;
+      acc[key].totalRevenue += sale.totalValue;
+      acc[key].sales += 1;
 
-    return acc;
-  }, {} as Record<string, { period: string; totalQuantity: number; totalRevenue: number; sales: number }>);
+      // Agrupar por método de pagamento para cada período
+      const method = sale.paymentMethod.toUpperCase();
+      if (!acc[key].paymentMethods[method]) {
+        acc[key].paymentMethods[method] = {
+          total: 0,
+          count: 0,
+        };
+      }
+      acc[key].paymentMethods[method].total += sale.totalValue;
+      acc[key].paymentMethods[method].count += 1;
+
+      return acc;
+    },
+    {} as Record<
+      string,
+      {
+        period: string;
+        totalQuantity: number;
+        totalRevenue: number;
+        sales: number;
+        paymentMethods: Record<string, { total: number; count: number }>;
+      }
+    >
+  );
 
   return Object.values(grouped);
 }

@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 // GET /api/sales - Listar todas as vendas
 export async function GET(request: NextRequest) {
   try {
-    // Parâmetros de consulta para filtrar por data
     const searchParams = request.nextUrl.searchParams;
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -38,6 +37,8 @@ export async function GET(request: NextRequest) {
         product: {
           select: {
             name: true,
+            price: true,
+            priceCard: true,
           },
         },
       },
@@ -46,7 +47,20 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(sales);
+    // Formatar os dados para incluir informações adicionais
+    const formattedSales = sales.map((sale) => ({
+      ...sale,
+      date: sale.date.toISOString(),
+      paymentMethod: sale.paymentMethod.toUpperCase(),
+      product: {
+        ...sale.product,
+        price: sale.product.price / 100, // Converter de centavos para reais
+        priceCard: sale.product.priceCard ? sale.product.priceCard / 100 : null,
+      },
+      totalValue: sale.totalValue / 100, // Converter de centavos para reais
+    }));
+
+    return NextResponse.json(formattedSales);
   } catch (error) {
     console.error("Erro ao buscar vendas:", error);
     return NextResponse.json(
@@ -59,12 +73,24 @@ export async function GET(request: NextRequest) {
 // POST /api/sales - Registrar uma nova venda
 export async function POST(request: NextRequest) {
   try {
-    const { productId, quantity, date } = await request.json();
+    const { productId, quantity, paymentMethod } = await request.json();
 
     // Validação básica
-    if (!productId || !quantity) {
+    if (!productId || !quantity || !paymentMethod) {
       return NextResponse.json(
-        { error: "ID do produto e quantidade são obrigatórios" },
+        {
+          error:
+            "ID do produto, quantidade e método de pagamento são obrigatórios",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validar método de pagamento
+    const validPaymentMethods = ["PIX", "CASH", "CARD"];
+    if (!validPaymentMethods.includes(paymentMethod.toUpperCase())) {
+      return NextResponse.json(
+        { error: "Método de pagamento inválido" },
         { status: 400 }
       );
     }
@@ -82,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se há estoque suficiente
-    if (product.quantity < quantity) {
+    if (product.saleQuantity < quantity) {
       return NextResponse.json(
         { error: "Quantidade insuficiente em estoque" },
         { status: 400 }
@@ -90,17 +116,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Calcular o valor total da venda
-    const totalValue = product.price * quantity;
+    const totalValue =
+      paymentMethod.toUpperCase() === "CARD" && product.priceCard
+        ? product.priceCard * quantity
+        : product.price * quantity;
 
     // Criar a transação para registrar a venda e atualizar o estoque
-    const [sale, _] = await prisma.$transaction([
+    const [sale, updatedProduct] = await prisma.$transaction([
       // Registrar a venda
       prisma.sale.create({
         data: {
           productId,
           quantity,
           totalValue,
-          date: date ? new Date(date) : new Date(),
+          paymentMethod: paymentMethod.toUpperCase(),
+          date: new Date(),
+        },
+        include: {
+          product: {
+            select: {
+              name: true,
+              price: true,
+              priceCard: true,
+            },
+          },
         },
       }),
 
@@ -108,14 +147,27 @@ export async function POST(request: NextRequest) {
       prisma.product.update({
         where: { id: productId },
         data: {
-          quantity: {
+          saleQuantity: {
             decrement: quantity,
           },
         },
       }),
     ]);
 
-    return NextResponse.json(sale, { status: 201 });
+    // Formatar a resposta
+    const formattedSale = {
+      ...sale,
+      date: sale.date.toISOString(),
+      paymentMethod: sale.paymentMethod.toUpperCase(),
+      product: {
+        ...sale.product,
+        price: sale.product.price / 100,
+        priceCard: sale.product.priceCard ? sale.product.priceCard / 100 : null,
+      },
+      totalValue: sale.totalValue / 100,
+    };
+
+    return NextResponse.json(formattedSale, { status: 201 });
   } catch (error) {
     console.error("Erro ao registrar venda:", error);
     return NextResponse.json(
