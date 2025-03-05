@@ -12,6 +12,6 @@ Sem Garantias: Este software é fornecido "como está", sem garantias de qualque
 
 Contato
 
-Para solicitações de permissão ou esclarecimentos, entre em contato com Gustavo em contatogstx@gmail.com (mailto:contatogstx@gmail.com).
+Para solicitações de permissão ou esclarecimentos, entre em contato com Gustavo em contatogstx@gmail.com.
 
 Este software foi feito com 💟 para Ana paula. Qualquer uso não autorizado é uma violação dos direitos do autor e do espírito deste projeto.
