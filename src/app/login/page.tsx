@@ -243,12 +243,6 @@ export default function LoginPage() {
                                     </>
                                 )}
                             </Button>
-
-                            <div className="mt-4 text-center">
-                                <a href="#" className="text-orange-300/80 hover:text-orange-300 text-sm transition-colors">
-                                    Esqueceu sua senha?
-                                </a>
-                            </div>
                         </motion.div>
                     </form>
                 </Form>
